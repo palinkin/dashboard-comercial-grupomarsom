@@ -810,6 +810,51 @@ document.getElementById('metaAno').onchange=renderVend;
 document.querySelectorAll('#dataTable th[data-sort]').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}renderTable();});
 resetForm();
 renderDash();
+
+// Carregar dados.json automaticamente com retry
+(async function loadExternalData() {
+  const urls = ['dados.json', '/dados.json', '../dados.json'];
+
+  for(const url of urls) {
+    try {
+      const response = await fetch(url, {cache: 'no-store'});
+      if(!response.ok) continue;
+
+      const d = await response.json();
+      if(!d.sales || !Array.isArray(d.sales)) continue;
+
+      // Encontrada dados válidos
+      state.sales = d.sales;
+      state.vendedores = [...new Set(d.sales.map(s => s.vendedor))].sort();
+      state.anos = [...new Set(d.sales.map(s => s.ano))].sort();
+
+      if(!state.metas) state.metas = {};
+      state.vendedores.forEach(v => {
+        state.anos.forEach(a => {
+          if(!state.metas[a]) state.metas[a] = {};
+          if(!state.metas[a][v]) {
+            const mv = {};
+            for(let m = 1; m <= 12; m++) mv[m] = 0;
+            state.metas[a][v] = mv;
+          }
+        });
+      });
+
+      // Recarregar tudo com novos dados
+      initFilters();
+      refreshAll();
+      save();
+
+      console.log('✓ Dados carregados com sucesso: ' + state.sales.length + ' registros, meses: ' +
+                  [...new Set(d.sales.map(s => s.mes))].sort().join(', '));
+      return;
+    } catch(e) {
+      console.log('✗ Erro ao tentar ' + url + ': ' + e.message);
+    }
+  }
+
+  console.log('ℹ Nenhum arquivo externo encontrado, usando dados padrão');
+})();
 </script>
 </body>
 </html>

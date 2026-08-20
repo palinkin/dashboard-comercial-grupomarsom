@@ -815,6 +815,7 @@ document.querySelectorAll('#dataTable th[data-sort]').forEach(th=>th.onclick=()=
 // Carregar dados.json ANTES de tudo
 (async function() {
   const urls = ['dados.json', '/dados.json', '../dados.json'];
+  let dadosCarregados = false;
 
   for(const url of urls) {
     try {
@@ -842,15 +843,22 @@ document.querySelectorAll('#dataTable th[data-sort]').forEach(th=>th.onclick=()=
       });
 
       const meses = [...new Set(d.sales.map(s => s.mes))].sort().join(', ');
+      const anos = [...new Set(d.sales.map(s => s.ano))].sort().join(', ');
       console.log('✅ DADOS CARREGADOS: ' + state.sales.length + ' registros');
-      console.log('📅 Meses: ' + meses);
+      console.log('📅 Meses disponíveis: ' + meses);
+      console.log('📅 Anos disponíveis: ' + anos);
 
       // Salvar estado atualizado
       save();
+      dadosCarregados = true;
       break;
     } catch(e) {
-      // Continuar tentando outras URLs
+      console.log('Tentando próxima URL: ' + e.message);
     }
+  }
+
+  if(!dadosCarregados) {
+    console.log('ℹ Usando dados padrão (SEED)');
   }
 
   // Agora renderizar com os dados (seja do arquivo externo ou padrão)
@@ -860,7 +868,11 @@ document.querySelectorAll('#dataTable th[data-sort]').forEach(th=>th.onclick=()=
   refreshAll();
 
   const mesesAtuais = [...new Set(state.sales.map(s => s.mes))].sort();
-  console.log('🎨 Painel renderizado com meses: ' + mesesAtuais.join(', '));
+  const anosAtuais = [...new Set(state.sales.map(s => s.ano))].sort();
+  console.log('🎨 Painel renderizado');
+  console.log('  Registros: ' + state.sales.length);
+  console.log('  Meses: ' + mesesAtuais.join(', '));
+  console.log('  Anos: ' + anosAtuais.join(', '));
 })();
 </script>
 </body>

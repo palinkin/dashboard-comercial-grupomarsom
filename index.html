@@ -323,8 +323,11 @@ function val(s){ return base==='faturado'? s.faturado : s.recebido; }
 function initFilters(){
   const ya=document.getElementById('fAno');
   const ys=years();
+  console.log('DEBUG initFilters - Anos disponíveis:', ys);
+  console.log('DEBUG initFilters - Total de vendas:', state.sales.length);
   ya.innerHTML=ys.map(y=>`<option value="${y}">${y}</option>`).join('');
   ya.value = ys[ys.length-1];
+  console.log('DEBUG initFilters - Ano selecionado:', ya.value);
   const fm=document.getElementById('fMes');
   fm.innerHTML='<option value="all">Todos</option>'+MESES_FULL.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
   const fv=document.getElementById('fVend');

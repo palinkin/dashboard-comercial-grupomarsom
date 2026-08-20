@@ -301,9 +301,13 @@ let base = 'faturado';
 let sortKey='mes', sortDir=1;
 
 function load(){
+  // Tenta localStorage primeiro (fallback)
   try{const s=localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){}
   return JSON.parse(JSON.stringify(SEED));
 }
+
+// FORÇA carregamento de dados.json (prioridade máxima)
+let forceExternalData = true;
 function save(){ try{localStorage.setItem(KEY, JSON.stringify(state));}catch(e){} }
 function money(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}); }
 function money2(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -808,11 +812,8 @@ document.querySelectorAll('#baseToggle button').forEach(b=>b.onclick=()=>{base=b
 ['fAno','fMes','fVend','rankMes'].forEach(id=>document.getElementById(id).onchange=refreshAll);
 document.getElementById('metaAno').onchange=renderVend;
 document.querySelectorAll('#dataTable th[data-sort]').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}renderTable();});
-resetForm();
-renderDash();
-
-// Carregar dados.json automaticamente com retry
-(async function loadExternalData() {
+// Carregar dados.json ANTES de tudo
+(async function() {
   const urls = ['dados.json', '/dados.json', '../dados.json'];
 
   for(const url of urls) {
@@ -823,7 +824,7 @@ renderDash();
       const d = await response.json();
       if(!d.sales || !Array.isArray(d.sales)) continue;
 
-      // Encontrada dados válidos
+      // Encontrada dados válidos - SOBRESCREVER estado
       state.sales = d.sales;
       state.vendedores = [...new Set(d.sales.map(s => s.vendedor))].sort();
       state.anos = [...new Set(d.sales.map(s => s.ano))].sort();
@@ -840,20 +841,26 @@ renderDash();
         });
       });
 
-      // Recarregar tudo com novos dados
-      initFilters();
-      refreshAll();
-      save();
+      const meses = [...new Set(d.sales.map(s => s.mes))].sort().join(', ');
+      console.log('✅ DADOS CARREGADOS: ' + state.sales.length + ' registros');
+      console.log('📅 Meses: ' + meses);
 
-      console.log('✓ Dados carregados com sucesso: ' + state.sales.length + ' registros, meses: ' +
-                  [...new Set(d.sales.map(s => s.mes))].sort().join(', '));
-      return;
+      // Salvar estado atualizado
+      save();
+      break;
     } catch(e) {
-      console.log('✗ Erro ao tentar ' + url + ': ' + e.message);
+      // Continuar tentando outras URLs
     }
   }
 
-  console.log('ℹ Nenhum arquivo externo encontrado, usando dados padrão');
+  // Agora renderizar com os dados (seja do arquivo externo ou padrão)
+  resetForm();
+  renderDash();
+  initFilters();
+  refreshAll();
+
+  const mesesAtuais = [...new Set(state.sales.map(s => s.mes))].sort();
+  console.log('🎨 Painel renderizado com meses: ' + mesesAtuais.join(', '));
 })();
 </script>
 </body>
